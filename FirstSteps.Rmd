@@ -1,0 +1,682 @@
+---
+title: "LV Strain Echo"
+author: "Kipp Johnson"
+date: "November 29, 2015"
+output: 
+  html_document: 
+    number_sections: yes
+    toc: yes
+---
+
+```{r Preliminaries, echo=FALSE}
+rm(list=ls())
+```
+
+# R function to read echo files
+
+R function called read.echo() to parse the input echo files and extract:
+* time
+* strain
+* strain rate
+* radial strain
+* radial strain rate
+* volume
+* segment volume
+
+```{r Defining read.echo()}
+
+read.echo <- function(infile){
+
+  # Read in the file into a single vector
+  con <- readLines(infile)
+
+  # Instantiate vectors
+  frame.time <- vector()
+  time.progression <- vector()
+  strain <- vector()
+  strain.rate <- vector()
+  radial.strain <- vector()
+  radial.strain.rate <- vector()
+  volume <- vector()
+  seg.vol <- vector()
+
+  for(i in 1:length(con)){
+    if(con[i]=="FrameTime(ms)"){
+      frame.time <- strsplit(con[i+1], split="\t")[[1]]
+      }
+
+    if(con[i]=="TimeProgression(ms)"){
+      time.progression <- strsplit(con[i+1], split="\t")[[1]]
+      }
+
+    if(con[i]=="Strain (%)"){
+      j <- 1
+      while(con[i+j] != ""){
+        strain <- rbind(strain, strsplit(con[i+j], split="\t")[[1]])
+        j <- j + 1
+      }
+    }
+
+    if(con[i]=="StrainRate (1/s)"){
+      j <- 1
+      while(con[i+j] != ""){
+        strain.rate <- rbind(strain.rate, strsplit(con[i+j], split="\t")[[1]])
+        j <- j + 1
+      }
+    }
+
+    if(con[i]=="RadialStrain (%)"){
+      j <- 1
+      while(con[i+j] != ""){
+        radial.strain <- rbind(radial.strain, strsplit(con[i+j], split="\t")[[1]])
+        j <- j + 1
+      }
+    }
+
+    if(con[i]=="RadialStrainRate (1/s)"){
+      j <- 1
+      while(con[i+j] != ""){
+        radial.strain.rate <- rbind(radial.strain.rate, strsplit(con[i+j], split="\t")[[1]])
+        j <- j + 1
+      }
+    }
+
+    if(con[i]=="Vol (ml)"){
+      volume <- strsplit(con[i+1], split="\t")[[1]]
+      }
+
+    if(con[i]=="Seg_Vol (ml)"){
+      j <- 1
+      while(con[i+j] != ""){
+        seg.vol <- rbind(seg.vol, strsplit(con[i+j], split="\t")[[1]])
+        j <- j + 1
+      }
+    }
+
+
+    }
+
+  class(frame.time) <- "numeric"
+  class(time.progression) <- "numeric"
+  class(strain) <- "numeric"
+  class(strain.rate) <- "numeric"
+  class(radial.strain) <- "numeric"
+  class(radial.strain.rate) <- "numeric"
+  class(volume) <- "numeric"
+  class(seg.vol) <- "numeric"
+
+  return(list(frame.time=(frame.time),
+              time.progression=(time.progression),
+              strain=t(strain),
+              strain.rate=t(strain.rate),
+              radial.strain=t(radial.strain),
+              radial.strain.rate=t(radial.strain.rate),
+              volume=(volume),
+              seg.vol=(seg.vol)))
+}
+```
+
+```{r, Reading in the files}
+
+# Read in the echos
+echo1 <- read.echo("~/Projects/partho/data/pborsuk2c.txt")
+echo2 <- read.echo("~/Projects/partho/data/pborsuk4c.txt")
+
+# Get number of time points
+nTimepoints <- dim(echo1$strain)[1]
+nProbes <- dim(echo1$strain)[2]
+  
+```
+
+# Exploratory Analysis
+
+## Strain
+
+```{r Plot strains, echo=FALSE}
+### Strain
+# Plot echo #1 strain
+plot(echo1$time.progression, echo1$strain[,1], type="l", 
+     ylab="Strain (%)", xlab="Time (ms)", main="Sample Echo 1",
+     ylim=c( min(echo1$strain), max(echo1$strain)))
+
+for(i in 2:nProbes){
+  lines(echo1$time.progression, echo1$strain[,i], type="l", col=i+1)
+}
+
+# Plot echo #2 strain
+plot(echo2$time.progression, echo2$strain[,1], type="l", 
+     ylab="Strain (%)", xlab="Time (ms)", main="Sample Echo 2",
+     ylim=c( min(echo2$strain), max(echo2$strain)))
+
+for(i in 2:nProbes){
+  lines(echo2$time.progression, echo2$strain[,i], type="l", col=i+1)
+}
+
+```
+
+## Strain Rates
+
+```{r Plot strain rates, echo=FALSE}
+### Strain Rates
+# Plot echo #1 strain rate
+plot(echo1$time.progression, echo1$strain.rate[,1], type="l", 
+     ylab="Strain Rate (1/s)", xlab="Time (ms)", main="Sample Echo 1",
+     ylim=c( min(echo1$strain.rate), max(echo1$strain.rate)))
+
+for(i in 2:nProbes){
+  lines(echo1$time.progression, echo1$strain.rate[,i], type="l", col=i+1)
+}
+
+
+# Plot echo #2 strain rate
+plot(echo2$time.progression, echo2$strain.rate[,1], type="l",
+     ylab="Strain Rate (1/s)", xlab="Time (ms)", main="Sample Echo 2",
+     ylim=c( min(echo2$strain.rate), max(echo2$strain.rate)))
+
+for(i in 2:nProbes){
+  lines(echo2$time.progression, echo2$strain.rate[,i], type="l", col=i+1)
+}
+
+```
+
+## Radial Strain
+
+```{r Radial strains, echo=FALSE}
+### Radial strain
+# Plot echo #1 radial strain
+plot(echo1$time.progression, echo1$radial.strain[,1], type="l", 
+     ylab="Radial Strain (%)", xlab="Time (ms)", main="Sample Echo 1",
+     ylim=c( min(echo1$radial.strain), max(echo1$radial.strain)))
+
+for(i in 2:nProbes){
+  lines(echo1$time.progression, echo1$radial.strain[,i], type="l", col=i+1)
+}
+
+# Plot echo #2 radial strain
+plot(echo2$time.progression, echo2$radial.strain[,1], type="l", 
+     ylab="Radial Strain (%)", xlab="Time (ms)", main="Sample Echo 2",
+     ylim=c( min(echo2$radial.strain), max(echo2$radial.strain)))
+
+for(i in 2:nProbes){
+  lines(echo2$time.progression, echo2$radial.strain[,i], type="l", col=i+1)
+}
+
+```
+
+## Radial strain rates
+
+```{r Radial strain rates, echo=FALSE}
+
+### Radial Strain Rate
+# Plot echo #1 radial strain rate
+plot(echo1$time.progression, echo1$radial.strain.rate[,1], type="l", 
+     ylab="Radial Strain Rate (1/s)", xlab="Time (ms)", main="Sample Echo 1",
+     ylim=c( min(echo1$radial.strain.rate), max(echo1$radial.strain.rate)))
+
+for(i in 2:nProbes){
+  lines(echo1$time.progression, echo1$radial.strain.rate[,i], type="l", col=i+1)
+}
+
+# Plot echo #2 radial strain
+plot(echo2$time.progression, echo2$radial.strain.rate[,1], type="l",
+     ylab="Radial Strain Rate (1/s)", xlab="Time (ms)", main="Sample Echo 2",
+     ylim=c( min(echo2$radial.strain.rate), max(echo2$radial.strain.rate)))
+
+for(i in 2:nProbes){
+  lines(echo2$time.progression, echo2$radial.strain.rate[,i], type="l", col=i+1)
+}
+
+
+```
+
+# Generating sample data
+
+Generating by using multivariate normal distribution with means and covariance matrix from given time series.
+
+## Example: plots of randomly generated sample data
+```{r, Generate sample data to plot}
+
+library(MASS)
+set.seed(10)
+
+
+# From first echo example
+r1 <- mvrnorm(nProbes, mu=apply(echo1$strain, 1, mean), Sigma=cov(t(echo1$strain)))
+plot(x=echo1$time.progression, y=r1[1,], ylim=c(min(r1),max(r1)),type="n", xlab="Time (ms)", ylab="Strain", main="Random Echo Generated from Echo 1")
+apply(r1, 1, lines, x=echo1$time.progression)
+
+
+# From second echo example
+r2 <- mvrnorm(nProbes, mu=apply(echo2$strain, 1, mean), Sigma=cov(t(echo2$strain)))
+plot(x=echo2$time.progression, y=r2[1,], ylim=c(min(r2),max(r2)),type="n", xlab="Time (ms)", ylab="Strain",main="Random Echo Generated from Echo 2")
+apply(r2, 1, lines, x=echo2$time.progression)
+
+```
+
+### Dealing with different times
+The first echo has time data for 92 time points; the second has data for 93 time points. We can drop the last time point to facilitate analysis, if required later.
+
+```{r Dropping time point}
+#plot(echo1$time.progression/echo2$time.progression[1:length(echo1$time.progression)])
+
+t1 <- echo1$time.progression
+t2 <- echo2$time.progression[1:length(echo1$time.progression)] #drop last time
+
+```
+
+# Statistical Analysis
+
+# Trace of covariance matrix
+
+The trace of the covariance matrix is equal to the total variance. 
+
+```{r Trace of covariance matrix}
+library(psych)
+
+st1 <- echo1$strain
+st2 <- echo2$strain
+
+tr(cov(st1))
+tr(cov(st2))
+
+```
+
+
+# Tensor Analysis
+
+## Create tensors of sample data
+
+Uses the rTensor package.
+
+We create multidimensional arrays and then fill them in with simulated data with the following structure:
+
+i = sample index (1 to n samples)
+j = index of LV point where strain is measured
+k = time
+
+TODO: Make sure R x C are in correct order.
+
+```{r, Actually generate sample data tensors}
+
+nSamples <- 25
+
+# Set dimensions for an i by j by k tensor
+# i = strain probe index
+# j = time point index
+# k = sample index 
+tensorDim1 <- c(dim(echo1$strain)[2], dim(echo1$strain)[1], nSamples) 
+samp1 <- array(data=NA, dim=tensorDim1)
+
+for(i in 1:nSamples){ 
+  samp1[, ,i] <- mvrnorm(nProbes, mu=apply(echo1$strain, 1, mean), Sigma=cov(t(echo1$strain)))
+}
+
+#Plot simulated data
+# Probe 1, 25 individuals
+plot(samp1[1,,1],type="l", ylim=c(min(samp1[1,,]),max(samp1[1,,]) ))
+for(i in 2:nSamples){ lines(samp1[1,,i])}
+
+# Probe 2, 25 individuals
+plot(samp1[2,,1],type="l", ylim=c(min(samp1[2,,]),max(samp1[2,,]) ))
+for(i in 2:nSamples){ lines(samp1[2,,i])}
+
+# Creating tensor 2
+tensorDim2 <- c(dim(echo2$strain)[2], dim(echo2$strain)[1], nSamples) 
+samp2 <- array(data=NA, dim=tensorDim2)
+
+for(i in 1:nSamples){ 
+  samp2[, ,i] <- mvrnorm(nProbes, mu=apply(echo2$strain, 1, mean), Sigma=cov(t(echo2$strain)))
+}
+
+library(rTensor)
+tnsr1 <- as.tensor(samp1)
+tnsr2 <- as.tensor(samp2)
+```
+
+# Principal component analysis, strain, actual data
+
+```{r Principal component analysis, strain}
+
+ep1 <- prcomp(echo1$strain, scale=TRUE) # 70% by pc1
+ep2 <- prcomp(echo2$strain, scale=TRUE) # 70% by pc1
+
+ep1 <- prcomp(echo1$strain, scale=FALSE) # 70% by pc1
+ep2 <- prcomp(echo2$strain, scale=FALSE) # 70% by pc1
+
+#summary(ep1)
+#summary(ep2)
+
+#plot(ep1$rotation[,1], ep1$rotation[,2])
+#plot(ep2$rotation[,1], ep2$rotation[,2])
+
+plot(ep1$sdev, type="b",xlab="Principal component",ylab="Variance",main="Echo 1")
+plot(ep2$sdev, type="b",xlab="Principal component",ylab="Variance",main="Echo 2")
+
+plot(ep1$x[,1],type="l",xlab="Time",ylab="Rotated Data",main="Echo 1")
+lines(ep1$x[,2],col="red")
+lines(ep1$x[,3],col="blue")
+lines(ep1$x[,4],col="green")
+
+plot(ep2$x[,1],type="l",xlab="Time",ylab="Rotated Data",main="Echo 2")
+lines(ep2$x[,2],col="red")
+lines(ep2$x[,3],col="blue")
+lines(ep2$x[,4],col="green")
+
+```
+
+# Principal component analysis, strain rate, actual data
+
+```{r Principal component analysis, strain rate}
+
+sr1 <- echo1$strain
+sr2 <- echo2$strain
+
+ep1 <- prcomp(echo1$strain.rate, scale=TRUE) # 70% by pc1
+ep2 <- prcomp(echo2$strain.rate, scale=TRUE) # 70% by pc1
+
+ep1 <- prcomp(echo1$strain.rate, scale=FALSE) # 70% by pc1
+ep2 <- prcomp(echo2$strain.rate, scale=FALSE) # 70% by pc1
+
+#summary(ep1)
+#summary(ep2)
+
+#plot(ep1$rotation[,1], ep1$rotation[,2])
+#plot(ep2$rotation[,1], ep2$rotation[,2])
+
+plot(ep1$sdev, type="b",xlab="Principal component",ylab="Variance",main="Echo 1")
+plot(ep2$sdev, type="b",xlab="Principal component",ylab="Variance",main="Echo 2")
+
+plot(ep1$x[,1],type="l",xlab="Time",ylab="Rotated Data",main="Echo 1")
+lines(ep1$x[,2],col="red")
+lines(ep1$x[,3],col="blue")
+lines(ep1$x[,4],col="green")
+
+plot(ep2$x[,1],type="l",xlab="Time",ylab="Rotated Data",main="Echo 2")
+lines(ep2$x[,2],col="red")
+lines(ep2$x[,3],col="blue")
+lines(ep2$x[,4],col="green")
+
+```
+
+```{r, Computing principal components with randomly generated data, echo=FALSE,eval=FALSE}
+
+m1 <- (t(apply(samp1, c(1,2), mean)))
+plot(1:nrow(m1), m1[,1], type="l",ylim=c(min(m1),max(m1)),xlab="Time Index")
+for(i in 1:ncol(m1)){
+  lines(1:nrow(m1), m1[,i], col=i)
+  }
+
+pr1 <- princomp(m1)
+plot(pr1$scores[,1],type="l")
+lines(pr1$scores[,2],type="l",col="red")
+lines(pr1$scores[,3],type="l",col="blue")
+lines(pr1$scores[,4],type="l",col="green")
+
+m2 <- (t(apply(samp2, c(1,2), mean)))
+plot(1:nrow(m2), m2[,1], type="l",ylim=c(min(m2),max(m2)))
+for(i in 1:ncol(m2)){
+  lines(1:nrow(m2), m2[,i], col=i)
+  }
+
+pr2 <- princomp(m2)
+plot(pr2$scores[,1],type="l")
+lines(pr2$scores[,2],type="l",col="red")
+lines(pr2$scores[,3],type="l",col="blue")
+lines(pr2$scores[,4],type="l",col="green")
+
+
+```
+```{r Calculation of generalized variances, echo=FALSE, eval=FALSE}
+
+m1 <- (t(apply(samp1, c(2,3), var)))
+
+plot(1:nrow(m1), m1[,1], type="l",ylim=c(min(m1),max(m1)))
+for(i in 1:ncol(m1)){
+  lines(1:nrow(m1), m1[,i], col=i)
+  }
+
+m2 <- (t(apply(samp2, c(2,3), var)))
+
+plot(1:nrow(m2), m2[,1], type="l",ylim=c(min(m2),max(m2)))
+for(i in 1:ncol(m2)){
+  lines(1:nrow(m2), m2[,i], col=i)
+  }
+
+trace_store1 <- numeric()
+trace_store2 <- numeric()
+for(i in 1:nSamples){
+  trace_store1[i] <- tr(cov(t(samp1[,,i])))
+  trace_store2[i] <- tr(cov(t(samp2[,,i])))
+}
+
+det_store1 <- numeric()
+det_store2 <- numeric()
+for(i in 1:nSamples){
+  det_store1[i] <- det(cov(t(samp1[,,i])) ) 
+  det_store2[i] <- det(cov(t(samp2[,,i])) )
+}
+
+```
+```{r canonical polyadic decomposition, eval=FALSE, echo=FALSE}
+
+cp1.1 <- cp(tnsr1, num_components=1)
+cp1.2 <- cp(tnsr1, num_components=2)
+cp1.3 <- cp(tnsr1, num_components=3)
+cp1.10 <- cp(tnsr1, num_components=10)
+cp1.100 <- cp(tnsr1, num_components=100)
+
+cp2.1 <- cp(tnsr2, num_components=1)
+cp2.2 <- cp(tnsr2, num_components=2)
+cp2.3 <- cp(tnsr2, num_components=3)
+cp2.10 <- cp(tnsr2, num_components=10)
+cp2.100 <- cp(tnsr2, num_components=100)
+
+#cp2 <- cp(samp1)
+
+```
+```{r Higher order singular value decomposition, eval=FALSE, echo=FALSE}
+
+hosvd1 <- hosvd(tnsr1)
+hosvd2 <- hosvd(tnsr2)
+
+str(tnsr1)
+str(tnsr2)
+
+```
+
+## Compute total variances
+
+```{r Compute total variances}
+
+# Total variances, actual data
+tr(cov(st1))
+tr(cov(st2))
+
+# Total variances, simulated data
+totvar1 <- numeric()
+totvar2 <- numeric()
+
+for(i in 1:nSamples){
+  totvar1[i] <- tr(cov(t(samp1[,,i])))
+  totvar2[i] <- tr(cov(t(samp2[,,i])))
+  }
+
+boxplot(totvar1, totvar2,names=c("Sample  ","Sample 2"),ylab="Total Variance")
+
+```
+
+# RMSD and RMSF
+
+## Root mean square deviation function
+
+```{r Root mean square deviation}
+
+rmsd <- function(positions){
+    # Input must be data frame with rows=times 
+    # and columns=probe values (strains, strain rates, etc.)
+  
+    outputdf <- numeric(length=dim(positions)[1])
+    
+    for(i in 1:nrow(positions)){
+      outputdf[i] <- sqrt(sum( (positions[i,] - positions[1,])^2 ) / length(positions[i,]))
+    }
+    return(rmsd=outputdf)
+}
+
+rmsd1 <- rmsd(echo1$strain)
+rmsd2 <- rmsd(echo2$strain)
+
+plot(rmsd1,type="l",xlab="Time",ylab="RMS Deviation", main="Echo 1 RMSD")
+plot(rmsd2,type="l",xlab="Time",ylab="RMS Deviation", main="Echo 2 RMSD")
+
+```
+
+## Root mean square fluctuation function
+
+```{r Root mean square fluctuation}
+
+# RMSF is taken as average per particle, not per time (which is RMSD)
+rmsf <- function(positions){
+    # Input must be data frame with rows=times 
+    # and columns=probe values (strains, strain rates, etc.)
+  
+    outputdf <- numeric(length=dim(positions)[2])
+    
+    for(i in 1:ncol(positions)){
+      outputdf[i] <- sqrt(sum( (positions[,i] - positions[,1])^2 ) / length(positions[,i]))
+    }
+    return(rmsf=outputdf)
+}
+
+rmsf1 <- rmsf(echo1$strain)
+rmsf2 <- rmsf(echo2$strain)
+
+plot(rmsf1,type="l",xlab="Position Index",ylab="RMS Fluctuation",main="Echo 1 RMSF")
+plot(rmsf2,type="l",xlab="Position Index",ylab="RMS Fluctuation",main="Echo 2 RMSF")
+
+```
+
+## Generation of random RMSD sequences
+
+Model the sample RMSDs as ARIMA processes, and simulate from those ARIMA models.
+
+## Function to generate random RMSDs
+
+```{r Generate random RMSDs}
+library(forecast)
+
+m2 <- auto.arima(rmsd2)
+
+simulate_RMSDs <- function(RMSDvec, n=100){
+
+  m1 <- auto.arima(RMSDvec)
+  nSimRMSD <- n; RMSDmat <- matrix(data=NA, nrow=length(RMSDvec), ncol=nSimRMSD)
+
+  for(i in 1:nSimRMSD){
+    RMSDmat[,i] <-  simulate.Arima(m1) }
+  
+  return(RMSDmat)
+  }
+
+```
+
+## Plot RMSD simulationsa
+
+This is an example of the randomly generated sequences.
+
+```{r Random RMSD plot}
+randRMSDs1 <- simulate_RMSDs(rmsd1,n=10)
+randRMSDs2 <- simulate_RMSDs(rmsd2, n=10)
+
+plot(randRMSDs1[,1],type="l",ylim=c(min(randRMSDs1), max(randRMSDs1) ),xlab="Time Index",ylab="RMSD",main="Randomly Generated RMSDs")
+
+for(i in 1:dim(randRMSDs1)[2]){ lines(randRMSDs1[,i],type="l", col=i) }
+```
+
+## Simulated RMSD trajectory statistics
+
+```{r Simulated RMSD trajectory statistics}
+
+# Total variance of RMSDs
+tr(cov(randRMSDs1))
+tr(cov(randRMSDs2))
+
+# Generalized Variance of RMSDs
+det(cov(randRMSDs1))
+det(cov(randRMSDs2))
+
+eigs1 <- eigen(cov(randRMSDs1))
+eigs2 <- eigen(cov(randRMSDs2))
+
+plot(eigs1$values, type="b",ylab="Eigenvalue",xlab="Eigenvalue Index",main="Echo 1 Simulations")
+plot(eigs2$values, type="b",ylab="Eigenvalue",xlab="Eigenvalue Index",main="Echo 2 Simulations")
+
+plot(eigs1$vectors, xlab="PC1", ylab="PC2",main="Eigenvectors of RMSD Trajectories, Sim. 1")
+plot(eigs2$vectors, xlab="PC1", ylab="PC2",main="Eigenvectors of RMSD Trajectories, Sim. 2")
+
+
+cor(eigs1$vectors)
+```
+
+
+# Pilot Data
+
+## Function to read in pilot data (40 total)
+
+```{r Read in four sets of pilot data}
+obs1_4ch_path <- "/Users/kwj/Dropbox/LV_Strain/data/pilot_data/obs1/4ch"
+obs2_4ch_path <- "/Users/kwj/Dropbox/LV_Strain/data/pilot_data/obs2/4ch"
+
+obs1_sax_path <- "/Users/kwj/Dropbox/LV_Strain/data/pilot_data/obs1/Sax"
+obs2_sax_path <- "/Users/kwj/Dropbox/LV_Strain/data/pilot_data/obs2/Sax"
+
+read_pilot_data <- function(path_to_data){
+  filenames <- dir(path_to_data)
+  nFiles <- length(filenames)
+  results <- vector("list")
+  
+  for(file in 1:length(filenames)){
+    results[[ eval(filenames[file]) ]] <- read.echo(paste0(path_to_data, "/", filenames[[file]]))
+  }
+
+  return(results)
+}
+
+# Return four lists, each containing sublists
+obs1_4ch <- read_pilot_data(obs1_4ch_path)
+obs2_4ch <- read_pilot_data(obs2_4ch_path)
+obs1_sax <- read_pilot_data(obs1_sax_path)
+obs2_sax <- read_pilot_data(obs2_sax_path)
+
+```
+
+## Calculate RMSDs of pilot data (4 chamber)
+
+```{r}
+
+
+extract_rmsd <- function(biglist, sub_index=3){
+  # Sub index:
+  # 1 = frame.time # 2 = time.progression
+  # 3 = strain # 4 = strain.rate # 5 = radial.strain
+  # 6 = radial.strain.rate # 7 = volume # 8 = seg.vol
+  
+  filenames <- names(biglist)
+  nEcho <- length(biglist)
+  rmsd_storage <- vector("list")
+  
+  for(i in 1:nEcho){
+  rmsd_results <- rmsd( biglist[[i]][[sub_index]] ) 
+  rmsd_storage[[filenames[i]]] <- rmsd_results
+  }
+  
+  return(rmsd_storage)
+}
+  
+obs1_4ch_rmsd <- extract_rmsd(obs1_4ch)
+obs2_4ch_rmsd <- extract_rmsd(obs2_4ch)
+obs1_sax_rmsd <- extract_rmsd(obs1_sax)
+obs2_sax_rmsd <- extract_rmsd(obs2_sax)
+
+```
+
